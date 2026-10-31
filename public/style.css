@@ -24,6 +24,9 @@ aside > label { display: flex; flex-direction: column; font-size: 13px; gap: 2px
 .duration { text-align: right; }
 .carrier, .stops { font-size: 13px; color: #5a6475; }
 .stops { grid-column: 2 / 5; }
+.stop b { color: #1d2433; font-weight: 600; }
+.part { margin-left: 4px; padding: 0 6px; border-radius: 8px; background: #eef2f8; font-size: 12px; }
+.stop.night .part { background: #1d3557; color: white; }
 .buy { display: flex; flex-direction: column; align-items: end; gap: 6px; justify-content: center; }
 .buy strong { font-size: 20px; }
 .links:empty { display: none; }

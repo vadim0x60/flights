@@ -1,5 +1,5 @@
 import filters from './filters/index.js';
-import { legs, layovers } from './filters/util.js';
+import { legs, layovers, hour } from './filters/util.js';
 
 const $ = (sel) => document.querySelector(sel);
 const form = $('#search');
@@ -85,6 +85,16 @@ const dayShift = (from, to) => {
   const days = (Date.parse(to.slice(0, 10)) - Date.parse(from.slice(0, 10))) / 864e5;
   return days ? `<sup>+${days}</sup>` : '';
 };
+const partOfDay = (local) => {
+  const h = hour(local);
+  return h < 5 ? 'night' : h < 12 ? 'morning' : h < 17 ? 'afternoon' : h < 22 ? 'evening' : 'night';
+};
+// Where in the day a connection falls, e.g. "afternoon", "morning → afternoon", "overnight".
+const dayPart = ({ arrivalLocal, departureLocal }) => {
+  if (arrivalLocal.slice(0, 10) !== departureLocal.slice(0, 10)) return 'overnight';
+  const [a, d] = [partOfDay(arrivalLocal), partOfDay(departureLocal)];
+  return a === d ? a : `${a} → ${d}`;
+};
 
 function render() {
   if (!itineraries.length) return;
@@ -97,8 +107,16 @@ function legHtml(name, leg) {
   const first = leg.segments[0];
   const last = leg.segments.at(-1);
   const stops = layovers(leg);
+  const shift = (local) => dayShift(first.departure_time_local, local);
   const stopText = stops.length
-    ? stops.map((s) => `${s.airport} ${hm(s.minutes)}`).join(', ')
+    ? stops.map((s) => {
+        const part = dayPart(s);
+        return `<div class="stop${/night/.test(part) ? ' night' : ''}">
+          <b>${s.airport}</b> ${hm(s.minutes)} ·
+          ${time(s.arrivalLocal)}${shift(s.arrivalLocal)}–${time(s.departureLocal)}${shift(s.departureLocal)}
+          <span class="part">${part}</span>
+        </div>`;
+      }).join('')
     : 'Direct';
   return `
     <div class="leg">
@@ -107,7 +125,7 @@ function legHtml(name, leg) {
         → ${time(last.arrival_time_local)}${dayShift(first.departure_time_local, last.arrival_time_local)} ${last.arrival_airport}</span>
       <span class="carrier">${leg.carrier}</span>
       <span class="duration">${hm(leg.duration_minutes)}</span>
-      <span class="stops">${stopText}</span>
+      <div class="stops">${stopText}</div>
     </div>`;
 }
 
