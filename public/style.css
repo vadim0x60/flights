@@ -17,16 +17,14 @@ aside > label { display: flex; flex-direction: column; font-size: 13px; gap: 2px
 #status { margin-top: 0; color: #5a6475; }
 #results { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 .card { background: white; border-radius: 10px; padding: 14px 16px; display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; }
-.legs { display: flex; flex-direction: column; gap: 6px; }
-.leg { display: grid; grid-template-columns: 40px 250px 1fr 60px; grid-template-rows: auto auto; column-gap: 12px; }
-.leg-name { grid-row: span 2; font-size: 12px; color: #5a6475; padding-top: 2px; }
-.times { font-weight: 600; }
+.legs { display: flex; flex-direction: column; gap: 12px; }
+.leg-head { font-size: 13px; color: #5a6475; margin-bottom: 4px; }
+.leg-head b { color: #1d2433; }
+.flight { display: grid; grid-template-columns: 70px 120px 120px 50px 1fr; column-gap: 12px; align-items: baseline; }
+.flight-no, .operator { font-size: 13px; color: #5a6475; }
+.time { font-weight: 600; white-space: nowrap; }
 .duration { text-align: right; }
-.carrier, .stops { font-size: 13px; color: #5a6475; }
-.stops { grid-column: 2 / 5; }
-.stop b { color: #1d2433; font-weight: 600; }
-.part { margin-left: 4px; padding: 0 6px; border-radius: 8px; background: #eef2f8; font-size: 12px; }
-.stop.night .part { background: #1d3557; color: white; }
+.connection { font-size: 12px; color: #5a6475; margin: 2px 0 2px 82px; padding-left: 8px; border-left: 2px dotted #c5ccd8; }
 .buy { display: flex; flex-direction: column; align-items: end; gap: 6px; justify-content: center; }
 .buy strong { font-size: 20px; }
 .links:empty { display: none; }

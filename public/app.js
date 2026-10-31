@@ -1,5 +1,5 @@
 import filters from './filters/index.js';
-import { legs, layovers, hour } from './filters/util.js';
+import { legs, layovers } from './filters/util.js';
 
 const $ = (sel) => document.querySelector(sel);
 const form = $('#search');
@@ -85,17 +85,6 @@ const dayShift = (from, to) => {
   const days = (Date.parse(to.slice(0, 10)) - Date.parse(from.slice(0, 10))) / 864e5;
   return days ? `<sup>+${days}</sup>` : '';
 };
-const partOfDay = (local) => {
-  const h = hour(local);
-  return h < 5 ? 'night' : h < 12 ? 'morning' : h < 17 ? 'afternoon' : h < 22 ? 'evening' : 'night';
-};
-// Where in the day a connection falls, e.g. "afternoon", "morning → afternoon", "overnight".
-const dayPart = ({ arrivalLocal, departureLocal }) => {
-  if (arrivalLocal.slice(0, 10) !== departureLocal.slice(0, 10)) return 'overnight';
-  const [a, d] = [partOfDay(arrivalLocal), partOfDay(departureLocal)];
-  return a === d ? a : `${a} → ${d}`;
-};
-
 function render() {
   if (!itineraries.length) return;
   const shown = applyFilters(itineraries).sort(sorters[$('#sort').value]);
@@ -103,29 +92,29 @@ function render() {
   $('#results').replaceChildren(...shown.map(card));
 }
 
+// One row per flight, with the connection wait between consecutive flights.
+// Day markers (+1) count from the leg's first departure.
 function legHtml(name, leg) {
   const first = leg.segments[0];
   const last = leg.segments.at(-1);
-  const stops = layovers(leg);
   const shift = (local) => dayShift(first.departure_time_local, local);
-  const stopText = stops.length
-    ? stops.map((s) => {
-        const part = dayPart(s);
-        return `<div class="stop${/night/.test(part) ? ' night' : ''}">
-          <b>${s.airport}</b> ${hm(s.minutes)} ·
-          ${time(s.arrivalLocal)}${shift(s.arrivalLocal)}–${time(s.departureLocal)}${shift(s.departureLocal)}
-          <span class="part">${part}</span>
-        </div>`;
-      }).join('')
-    : 'Direct';
+  const stops = layovers(leg);
+  const rows = leg.segments.map((s, i) => `
+    ${i ? `<div class="connection">${hm(stops[i - 1].minutes)} connection in ${stops[i - 1].airport}</div>` : ''}
+    <div class="flight">
+      <span class="flight-no">${s.marketing_carrier_code} ${s.flight_number}</span>
+      <span class="time">${time(s.departure_time_local)}${shift(s.departure_time_local)} ${s.departure_airport}</span>
+      <span class="time">${time(s.arrival_time_local)}${shift(s.arrival_time_local)} ${s.arrival_airport}</span>
+      <span class="duration">${hm(s.duration_minutes)}</span>
+      <span class="operator">${s.operating_carrier_name ?? ''}</span>
+    </div>`).join('');
   return `
     <div class="leg">
-      <span class="leg-name">${name}</span>
-      <span class="times">${time(first.departure_time_local)} ${first.departure_airport}
-        → ${time(last.arrival_time_local)}${dayShift(first.departure_time_local, last.arrival_time_local)} ${last.arrival_airport}</span>
-      <span class="carrier">${leg.carrier}</span>
-      <span class="duration">${hm(leg.duration_minutes)}</span>
-      <div class="stops">${stopText}</div>
+      <div class="leg-head">
+        <b>${name}</b> ${first.departure_airport} → ${last.arrival_airport} ·
+        ${stops.length ? `${stops.length} stop${stops.length > 1 ? 's' : ''}` : 'Direct'} · ${hm(leg.duration_minutes)} total
+      </div>
+      ${rows}
     </div>`;
 }
 
