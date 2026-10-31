@@ -26,5 +26,23 @@ export const layovers = (leg) =>
     };
   });
 
+/** Epoch ms of a segment's 'departure' or 'arrival', from UTC time or else local time and timezone. */
+export function instant(segment, end) {
+  const utc = segment[`${end}_time_utc`];
+  if (utc) return Date.parse(utc);
+  const asUtc = Date.parse(`${segment[`${end}_time_local`]}Z`);
+  const tz = segment[`${end}_timezone`];
+  const offset = (ms) => {
+    const p = Object.fromEntries(
+      new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric',
+        day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' })
+        .formatToParts(ms).map(({ type, value }) => [type, Number(value)]),
+    );
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - ms;
+  };
+  const guess = asUtc - offset(asUtc);
+  return asUtc - offset(guess);
+}
+
 /** Local hour (0-23) of an ISO local time like "2026-11-20T17:25:00". */
 export const hour = (localTime) => Number(localTime.slice(11, 13));

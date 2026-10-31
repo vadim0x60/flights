@@ -7,7 +7,9 @@
 //
 // Filters run in the browser on results already fetched, so changing them is
 // instant and costs no API requests. Add a filter by appending to this list.
-import { legs, segments, layovers, hour } from './util.js';
+import { legs, segments, layovers, instant } from './util.js';
+import { isVadimNight } from './sun.js';
+import airports from './airports.js';
 
 export default [
   {
@@ -32,10 +34,20 @@ export default [
     keep: (it, hours) => legs(it).every((leg) => leg.duration_minutes <= hours * 60),
   },
   {
+    // No takeoff or landing, connections included, while it's Vadim night (see
+    // sun.js) at both the trip's origin and its destination. Local time at a
+    // connecting airport doesn't matter.
     id: 'no-red-eye',
-    label: 'No departures 00:00–05:59',
+    label: 'No takeoffs or landings during Vadim night',
     control: { type: 'checkbox' },
-    keep: (it) => segments(it).every((s) => hour(s.departure_time_local) >= 6),
+    keep: (it) => {
+      const ends = [it.outbound.segments[0].departure_airport, it.outbound.segments.at(-1).arrival_airport]
+        .map((code) => airports[code]);
+      if (!ends.every(Boolean)) return true; // unknown coordinates: can't tell, so keep
+      return segments(it).every((s) =>
+        ['departure', 'arrival'].every((end) => !ends.every(([lat, lon]) => isVadimNight(instant(s, end), lat, lon))),
+      );
+    },
   },
   {
     id: 'avoid-airports',
