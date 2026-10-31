@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flights</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>Flights</h1>
+    <form id="search">
+      <label>From <input name="origin" required placeholder="LON" maxlength="3" size="4"></label>
+      <label>To <input name="destination" required placeholder="BCN" maxlength="3" size="4"></label>
+      <label>Depart <input name="departure_date" type="date" required></label>
+      <label>Return <input name="return_date" type="date"></label>
+      <label>Adults <input name="adults" type="number" min="1" max="9" value="1"></label>
+      <label>Cabin
+        <select name="cabin_class">
+          <option value="economy">Economy</option>
+          <option value="premium_economy">Premium economy</option>
+          <option value="business">Business</option>
+          <option value="first">First</option>
+        </select>
+      </label>
+      <label>Market <input name="market" value="GB" maxlength="2" size="3"></label>
+      <button>Search</button>
+    </form>
+  </header>
+  <main>
+    <aside>
+      <h2>Filters</h2>
+      <div id="filters"></div>
+      <label>Sort
+        <select id="sort">
+          <option value="price">Cheapest</option>
+          <option value="duration">Shortest</option>
+          <option value="departure">Earliest departure</option>
+        </select>
+      </label>
+    </aside>
+    <section>
+      <p id="status">Search for a route to see fares.</p>
+      <ol id="results"></ol>
+    </section>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

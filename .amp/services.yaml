@@ -1,0 +1,5 @@
+services:
+  web:
+    command: node --watch server.js
+    port: 3000
+    title: Flights
