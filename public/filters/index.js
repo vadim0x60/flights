@@ -47,12 +47,43 @@ export default [
     },
   },
   {
-    id: 'avoid-airports',
-    label: 'Avoid airports (comma-separated)',
-    control: { type: 'text', placeholder: 'e.g. LHR, CDG' },
-    keep: (it, text) => {
-      const avoid = text.toUpperCase().split(/[\s,]+/).filter(Boolean);
-      return segments(it).every((s) => !avoid.includes(s.departure_airport) && !avoid.includes(s.arrival_airport));
+    // Drops itineraries that take off from or land at any airport in the US or
+    // its inhabited territories (Puerto Rico, Guam, US Virgin Islands, American
+    // Samoa, Northern Mariana Islands) or minor outlying islands, connections included.
+    id: 'no-usa',
+    label: 'No US of A',
+    control: { type: 'checkbox' },
+    keep: (it) => {
+      const usa = ['US', 'PR', 'GU', 'VI', 'AS', 'MP', 'UM'];
+      return segments(it).every((s) =>
+        [s.departure_airport, s.arrival_airport].every((code) => !usa.includes(airports[code]?.[2])));
+    },
+  },
+  {
+    // Drops itineraries that put you in metropolitan France (country FR,
+    // Corsica included; overseas France has its own country codes) on any
+    // date from June 1 to August 31, in local time. Time on the ground between
+    // landing at a French airport and the next takeoff from one counts, so a
+    // connection or a round trip's stay spanning summer is dropped too.
+    id: 'no-france-summer',
+    label: 'No France in summer',
+    control: { type: 'checkbox' },
+    keep: (it) => {
+      const french = (code) => airports[code]?.[2] === 'FR';
+      const day = (local) => local.slice(0, 10);
+      // Whether the dates from..to (YYYY-MM-DD, inclusive) include a summer day.
+      const summer = (from, to) => {
+        for (let y = Number(from.slice(0, 4)); y <= Number(to.slice(0, 4)); y++) {
+          if (from <= `${y}-08-31` && to >= `${y}-06-01`) return true;
+        }
+        return false;
+      };
+      return segments(it).every((s, i, all) => {
+        const prev = all[i - 1];
+        const since = prev && french(prev.arrival_airport) ? day(prev.arrival_time_local) : day(s.departure_time_local);
+        return !(french(s.departure_airport) && summer(since, day(s.departure_time_local))) &&
+          !(french(s.arrival_airport) && summer(day(s.arrival_time_local), day(s.arrival_time_local)));
+      });
     },
   },
   {
@@ -60,5 +91,19 @@ export default [
     label: 'No self-transfer',
     control: { type: 'checkbox' },
     keep: (it) => !it.requires_self_transfer,
+  },
+  {
+    // Drops any itinerary with a Ryanair flight on either leg: marketed as
+    // Ryanair (FR) or Ryanair UK (RK), or operated by Ryanair or a Ryanair
+    // Group airline flying for it (Malta Air, Buzz, Lauda Europe). Operator
+    // names match exactly, so KM Malta Airlines is kept.
+    id: 'no-ryanair',
+    label: 'No Ryanair',
+    control: { type: 'checkbox' },
+    keep: (it) =>
+      segments(it).every((s) =>
+        !['FR', 'RK'].includes(s.marketing_carrier_code?.toUpperCase()) &&
+        !/^(ryanair\b.*|malta air|buzz|lauda( europe)?)$/i.test(s.operating_carrier_name?.trim() ?? ''),
+      ),
   },
 ];
