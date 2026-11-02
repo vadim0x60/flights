@@ -13,15 +13,6 @@ import airports from './airports.js';
 
 export default [
   {
-    id: 'no-overnight-layover',
-    label: 'No overnight layovers',
-    control: { type: 'checkbox' },
-    keep: (it) =>
-      legs(it).every((leg) =>
-        layovers(leg).every((l) => l.arrivalLocal.slice(0, 10) === l.departureLocal.slice(0, 10)),
-      ),
-  },
-  {
     id: 'max-layover',
     label: 'Max single layover (hours)',
     control: { type: 'number', placeholder: 'e.g. 3' },
@@ -34,19 +25,25 @@ export default [
     keep: (it, hours) => legs(it).every((leg) => leg.duration_minutes <= hours * 60),
   },
   {
-    // No takeoff or landing, connections included, while it's Vadim night (see
-    // sun.js) at both the trip's origin and its destination. Local time at a
-    // connecting airport doesn't matter.
+    // You're awake from 40 minutes before each takeoff to 20 minutes after each
+    // landing, connections included. Drop the itinerary if any of those windows
+    // touches Vadim night (see sun.js) at both the trip's origin and its
+    // destination. Local time at a connecting airport doesn't matter.
     id: 'no-red-eye',
-    label: 'No takeoffs or landings during Vadim night',
+    label: 'Protect sleep',
     control: { type: 'checkbox' },
     keep: (it) => {
       const ends = [it.outbound.segments[0].departure_airport, it.outbound.segments.at(-1).arrival_airport]
         .map((code) => airports[code]);
       if (!ends.every(Boolean)) return true; // unknown coordinates: can't tell, so keep
-      return segments(it).every((s) =>
-        ['departure', 'arrival'].every((end) => !ends.every(([lat, lon]) => isVadimNight(instant(s, end), lat, lon))),
-      );
+      const minute = 60000;
+      // A Vadim night always lasts 8 hours, so a window this short overlaps
+      // one exactly when one of its two ends falls inside it.
+      const windows = segments(it).flatMap((s) => [
+        [instant(s, 'departure') - 40 * minute, instant(s, 'departure')],
+        [instant(s, 'arrival'), instant(s, 'arrival') + 20 * minute],
+      ]);
+      return windows.every((w) => !ends.every(([lat, lon]) => w.some((ms) => isVadimNight(ms, lat, lon))));
     },
   },
   {
