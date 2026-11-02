@@ -1,5 +1,6 @@
 import filters from './filters/index.js';
 import { legs, layovers } from './filters/util.js';
+import { wifi } from './filters/wifi.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -186,6 +187,7 @@ function legHtml(name, leg) {
         <span class="time">${time(s.arrival_time_local)}${shift(s.arrival_time_local)} <span class="iata">${s.arrival_airport}</span></span>
         <span class="duration">${hm(s.duration_minutes)}</span>
         <span class="operator">${s.operating_carrier_name ?? ''}${aircraft}</span>
+        ${wifiHtml(s)}
       </div>`;
   }).join('');
   return `
@@ -198,6 +200,15 @@ function legHtml(name, leg) {
       </div>
       <div class="segments">${rows}</div>
     </div>`;
+}
+
+// FlightWifi's verdict for the flight; hover for the system and how to get on it.
+const escape = (s) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+function wifiHtml(s) {
+  const w = wifi(s);
+  const details = [w.airline && `${w.airline}${s.aircraft ? ` ${s.aircraft}` : ''}: ${w.provider ?? 'no rule for this aircraft'}`,
+    w.access, 'Source: FlightWifi'].filter(Boolean).join('\n');
+  return `<span class="wifi wifi-${w.key}" title="${escape(details)}">${w.label}</span>`;
 }
 
 function card(it) {

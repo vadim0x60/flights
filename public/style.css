@@ -686,6 +686,61 @@ h2 {
   padding-left: 4px;
 }
 
+/* Wi-Fi verdict: its own row under the flight, aligned with the times. */
+.wifi {
+  grid-column: 2 / -1;
+  justify-self: start;
+  font-size: 11.5px;
+  color: var(--muted);
+  cursor: help;
+}
+
+.wifi::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+
+.wifi-calls,
+.wifi-varies,
+.wifi-browsing {
+  color: var(--direct-text);
+}
+
+.wifi-calls::before,
+.wifi-varies::before,
+.wifi-browsing::before {
+  background: var(--direct-text);
+}
+
+.wifi-varies::before,
+.wifi-browsing::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--direct-text);
+}
+
+.wifi-partial {
+  color: var(--conn-text);
+}
+
+.wifi-partial::before {
+  background: var(--conn-text);
+}
+
+.credit {
+  margin: 16px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.credit a {
+  color: inherit;
+}
+
 sup {
   font-size: 10px;
   font-weight: 700;

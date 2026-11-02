@@ -10,6 +10,7 @@
 import { legs, segments, layovers, instant } from './util.js';
 import { isVadimNight } from './sun.js';
 import airports from './airports.js';
+import { wifi, VERDICTS } from './wifi.js';
 
 export default [
   {
@@ -85,6 +86,20 @@ export default [
           !(french(s.arrival_airport) && summer(day(s.arrival_time_local), day(s.arrival_time_local)));
       });
     },
+  },
+  {
+    // Verdicts come from FlightWifi (see wifi.js). A flight it can't vouch
+    // for, including "on some aircraft" and "not verified", fails both.
+    id: 'wifi',
+    label: 'Wi-Fi on every flight',
+    control: { type: 'checkbox' },
+    keep: (it) => segments(it).every((s) => wifi(s).rank >= VERDICTS.browsing.rank),
+  },
+  {
+    id: 'wifi-calls',
+    label: 'Video-call Wi-Fi on every flight',
+    control: { type: 'checkbox' },
+    keep: (it) => segments(it).every((s) => wifi(s).key === 'calls'),
   },
   {
     id: 'no-self-transfer',
