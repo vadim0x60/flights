@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="swiss">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,39 +8,89 @@
 </head>
 <body>
   <header>
-    <h1>Flights</h1>
-    <form id="search">
-      <label>From <input name="origin" required placeholder="LON" maxlength="3" size="4"></label>
-      <label>To <input name="destination" required placeholder="BCN" maxlength="3" size="4"></label>
-      <label>Depart <input name="departure_date" type="date" required></label>
-      <label>Return <input name="return_date" type="date"></label>
-      <label>Adults <input name="adults" type="number" min="1" max="9" value="1"></label>
-      <label>Cabin
-        <select name="cabin_class">
-          <option value="economy">Economy</option>
-          <option value="premium_economy">Premium economy</option>
-          <option value="business">Business</option>
-          <option value="first">First</option>
-        </select>
-      </label>
-      <label>Market <input name="market" value="GB" maxlength="2" size="3"></label>
-      <button>Search</button>
-    </form>
+    <div class="header-inner">
+      <div class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">✈</span>
+          <h1>Flights</h1>
+          <span class="brand-sub">Fare &amp; sleep-aware itinerary search</span>
+        </div>
+        <div class="theme-switch" role="group" aria-label="Visual theme">
+          <button type="button" data-theme-opt="swiss" class="active">Swiss</button>
+          <button type="button" data-theme-opt="lounge">Lounge</button>
+          <button type="button" data-theme-opt="cockpit">Cockpit</button>
+        </div>
+      </div>
+      <form id="search">
+        <div class="search-group route-group">
+          <label class="field field-iata">
+            <span>From</span>
+            <input name="origin" required placeholder="LON" maxlength="3" size="4" autocomplete="off" spellcheck="false">
+          </label>
+          <button type="button" id="swap" class="swap-btn" aria-label="Swap origin and destination" title="Swap origin and destination">⇄</button>
+          <label class="field field-iata">
+            <span>To</span>
+            <input name="destination" required placeholder="BCN" maxlength="3" size="4" autocomplete="off" spellcheck="false">
+          </label>
+        </div>
+        <div class="search-group date-group">
+          <label class="field">
+            <span>Depart</span>
+            <input name="departure_date" type="date" required>
+          </label>
+          <label class="field">
+            <span>Return</span>
+            <input name="return_date" type="date">
+          </label>
+        </div>
+        <div class="search-group meta-group">
+          <label class="field field-sm">
+            <span>Adults</span>
+            <input name="adults" type="number" min="1" max="9" value="1">
+          </label>
+          <label class="field">
+            <span>Cabin</span>
+            <select name="cabin_class">
+              <option value="economy">Economy</option>
+              <option value="premium_economy">Premium economy</option>
+              <option value="business">Business</option>
+              <option value="first">First</option>
+            </select>
+          </label>
+          <label class="field field-sm">
+            <span>Market</span>
+            <input name="market" value="GB" maxlength="2" size="3" autocomplete="off" spellcheck="false">
+          </label>
+        </div>
+        <button type="submit" class="search-btn">Search</button>
+      </form>
+    </div>
   </header>
   <main>
     <aside>
-      <h2>Filters</h2>
+      <div class="aside-head">
+        <h2>Filters</h2>
+        <button type="button" id="reset-filters" class="reset-btn" hidden>Reset</button>
+      </div>
       <div id="filters"></div>
-      <label>Sort
-        <select id="sort">
-          <option value="price">Cheapest</option>
-          <option value="duration">Shortest</option>
-          <option value="departure">Earliest departure</option>
-        </select>
-      </label>
     </aside>
-    <section>
-      <p id="status">Search for a route to see fares.</p>
+    <section class="results-pane">
+      <div class="results-bar">
+        <p id="status">Search for a route to see fares.</p>
+        <div class="sort-bar" role="group" aria-label="Sort itineraries">
+          <span class="sort-label">Sort</span>
+          <div class="sort-pills">
+            <button type="button" class="sort-btn active" data-sort="price">Cheapest</button>
+            <button type="button" class="sort-btn" data-sort="duration">Shortest</button>
+            <button type="button" class="sort-btn" data-sort="departure">Earliest</button>
+          </div>
+          <select id="sort" aria-label="Sort" hidden>
+            <option value="price">Cheapest</option>
+            <option value="duration">Shortest</option>
+            <option value="departure">Earliest departure</option>
+          </select>
+        </div>
+      </div>
       <ol id="results"></ol>
     </section>
   </main>

@@ -2,12 +2,48 @@ import filters from './filters/index.js';
 import { legs, layovers } from './filters/util.js';
 
 const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
 const form = $('#search');
 let itineraries = [];
+
+// --- Theme switcher -------------------------------------------------------
+
+const setTheme = (theme) => {
+  document.documentElement.dataset.theme = theme;
+  try { localStorage.setItem('flights-theme', theme); } catch {}
+  for (const btn of $$('[data-theme-opt]')) {
+    btn.classList.toggle('active', btn.dataset.themeOpt === theme);
+  }
+};
+const initialTheme = new URLSearchParams(location.search).get('theme')
+  || (() => { try { return localStorage.getItem('flights-theme'); } catch { return null; } })()
+  || 'swiss';
+setTheme(initialTheme);
+for (const btn of $$('[data-theme-opt]')) {
+  btn.addEventListener('click', () => setTheme(btn.dataset.themeOpt));
+}
+
+// --- Route swap -----------------------------------------------------------
+
+$('#swap')?.addEventListener('click', () => {
+  const [o, d] = [form.elements.origin, form.elements.destination];
+  [o.value, d.value] = [d.value, o.value];
+});
 
 // --- Filters sidebar ------------------------------------------------------
 
 const values = {};
+const inputs = new Map();
+const resetBtn = $('#reset-filters');
+
+const isActive = (v) => v !== null && v !== false;
+const syncReset = () => {
+  const activeCount = filters.filter((f) => isActive(values[f.id])).length;
+  if (!resetBtn) return;
+  resetBtn.hidden = activeCount === 0;
+  resetBtn.textContent = activeCount ? `Reset (${activeCount})` : 'Reset';
+};
+
 for (const f of filters) {
   const input = Object.assign(document.createElement('input'), {
     type: f.control.type,
@@ -22,14 +58,30 @@ for (const f of filters) {
       : input.value.trim() || null;
   };
   read();
-  input.addEventListener('input', () => { read(); render(); });
+  input.addEventListener('input', () => { read(); syncReset(); render(); });
+  inputs.set(f.id, { input, read, def: f.control.default });
   const label = document.createElement('label');
   label.className = `filter filter-${f.control.type}`;
-  label.append(input, ' ', f.label);
+  const span = document.createElement('span');
+  span.className = 'filter-label';
+  span.textContent = f.label;
+  if (f.control.type === 'checkbox') label.append(input, span);
+  else label.append(span, input);
   $('#filters').append(label);
 }
+syncReset();
 
-const isActive = (v) => v !== null && v !== false;
+resetBtn?.addEventListener('click', () => {
+  for (const f of filters) {
+    const entry = inputs.get(f.id);
+    if (f.control.type === 'checkbox') entry.input.checked = !!entry.def;
+    else entry.input.value = entry.def ?? '';
+    entry.read();
+  }
+  syncReset();
+  render();
+});
+
 const applyFilters = (list) =>
   list.filter((it) => filters.every((f) => !isActive(values[f.id]) || f.keep(it, values[f.id])));
 
@@ -66,7 +118,25 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-$('#sort').addEventListener('change', render);
+// --- Sort ------------------------------------------------------------------
+
+const sortSelect = $('#sort');
+const syncSortPills = (val) => {
+  for (const btn of $$('.sort-btn')) {
+    btn.classList.toggle('active', btn.dataset.sort === val);
+  }
+};
+sortSelect.addEventListener('change', () => {
+  syncSortPills(sortSelect.value);
+  render();
+});
+for (const btn of $$('.sort-btn')) {
+  btn.addEventListener('click', () => {
+    sortSelect.value = btn.dataset.sort;
+    syncSortPills(btn.dataset.sort);
+    render();
+  });
+}
 
 // --- Results ---------------------------------------------------------------
 
@@ -85,9 +155,10 @@ const dayShift = (from, to) => {
   const days = (Date.parse(to.slice(0, 10)) - Date.parse(from.slice(0, 10))) / 864e5;
   return days ? `<sup>+${days}</sup>` : '';
 };
+
 function render() {
   if (!itineraries.length) return;
-  const shown = applyFilters(itineraries).sort(sorters[$('#sort').value]);
+  const shown = applyFilters(itineraries).sort(sorters[sortSelect.value]);
   $('#status').textContent = `${shown.length} of ${itineraries.length} itineraries`;
   $('#results').replaceChildren(...shown.map(card));
 }
@@ -99,39 +170,54 @@ function legHtml(name, leg) {
   const last = leg.segments.at(-1);
   const shift = (local) => dayShift(first.departure_time_local, local);
   const stops = layovers(leg);
-  const rows = leg.segments.map((s, i) => `
-    ${i ? `<div class="connection">${hm(stops[i - 1].minutes)} connection in ${stops[i - 1].airport}</div>` : ''}
-    <div class="flight">
-      <span class="flight-no">${s.marketing_carrier_code} ${s.flight_number}</span>
-      <span class="time">${time(s.departure_time_local)}${shift(s.departure_time_local)} ${s.departure_airport}</span>
-      <span class="time">${time(s.arrival_time_local)}${shift(s.arrival_time_local)} ${s.arrival_airport}</span>
-      <span class="duration">${hm(s.duration_minutes)}</span>
-      <span class="operator">${s.operating_carrier_name ?? ''}</span>
-    </div>`).join('');
+  const stopBadge = stops.length
+    ? `<span class="badge badge-stops">${stops.length} stop${stops.length > 1 ? 's' : ''}</span>`
+    : `<span class="badge badge-direct">Direct</span>`;
+  const rows = leg.segments.map((s, i) => {
+    const conn = i
+      ? `<div class="connection"><span class="conn-pill">${hm(stops[i - 1].minutes)} connection in <b>${stops[i - 1].airport}</b></span></div>`
+      : '';
+    const aircraft = s.aircraft ? `<span class="aircraft"> · ${s.aircraft.replace(/ Passenger$/i, '')}</span>` : '';
+    return `${conn}
+      <div class="flight">
+        <span class="flight-no">${s.marketing_carrier_code} ${s.flight_number}</span>
+        <span class="time">${time(s.departure_time_local)}${shift(s.departure_time_local)} <span class="iata">${s.departure_airport}</span></span>
+        <span class="flight-arrow" aria-hidden="true">→</span>
+        <span class="time">${time(s.arrival_time_local)}${shift(s.arrival_time_local)} <span class="iata">${s.arrival_airport}</span></span>
+        <span class="duration">${hm(s.duration_minutes)}</span>
+        <span class="operator">${s.operating_carrier_name ?? ''}${aircraft}</span>
+      </div>`;
+  }).join('');
   return `
     <div class="leg">
       <div class="leg-head">
-        <b>${name}</b> ${first.departure_airport} → ${last.arrival_airport} ·
-        ${stops.length ? `${stops.length} stop${stops.length > 1 ? 's' : ''}` : 'Direct'} · ${hm(leg.duration_minutes)} total
+        <b>${name}</b>
+        <span class="leg-route">${first.departure_airport} → ${last.arrival_airport}</span>
+        ${stopBadge}
+        <span class="leg-total">${hm(leg.duration_minutes)} total</span>
       </div>
-      ${rows}
+      <div class="segments">${rows}</div>
     </div>`;
 }
 
 function card(it) {
   const li = document.createElement('li');
-  li.className = 'card';
+  li.className = `card${it.inbound ? ' is-roundtrip' : ''}`;
+  const cabinLabel = (it.cabin_class ?? 'economy').replace('_', ' ');
   li.innerHTML = `
     <div class="legs">
       ${legHtml('Out', it.outbound)}
       ${it.inbound ? legHtml('Back', it.inbound) : ''}
     </div>
     <div class="buy">
-      <strong>${money(it.price)}</strong>
-      <button>Book</button>
+      <div class="price-group">
+        <strong>${money(it.price)}</strong>
+        <span class="price-meta">${cabinLabel}${it.requires_self_transfer ? ' · self-transfer' : ''}</span>
+      </div>
+      <button type="button" class="book-btn">Book</button>
     </div>
     <div class="links"></div>`;
-  li.querySelector('button').addEventListener('click', (e) => showBookingLinks(it, li, e.target));
+  li.querySelector('.book-btn').addEventListener('click', (e) => showBookingLinks(it, li, e.currentTarget));
   return li;
 }
 
@@ -143,10 +229,11 @@ async function showBookingLinks(it, li, button) {
     const data = await api('/api/fares/booking-links', { ignav_id: it.ignav_id });
     box.innerHTML = data.booking_options.map((opt) => `
       <div class="option">
-        ${data.booking_options.length > 1 ? `<span class="covers">${opt.legs.join(' + ')}</span>` : ''}
+        ${data.booking_options.length > 1 ? `<span class="covers">${opt.legs.join(' + ')}</span>` : '<span class="covers">Book via</span>'}
         ${opt.links.map((l) => `
-          <a href="${l.url}" target="_blank" rel="noopener">
-            ${l.provider_name}${l.provider_type === 'airline' ? ' ✈' : ''}${l.fare_name ? ` (${l.fare_name})` : ''}${l.price ? ` · ${money(l.price)}` : ''}
+          <a class="${l.provider_type === 'airline' ? 'is-airline' : ''}" href="${l.url}" target="_blank" rel="noopener">
+            <span>${l.provider_name}${l.provider_type === 'airline' ? ' ✈' : ''}${l.fare_name ? ` (${l.fare_name})` : ''}</span>
+            ${l.price ? `<b>${money(l.price)}</b>` : ''}
           </a>`).join('')}
       </div>`).join('') || 'No booking options available.';
   } catch (err) {
