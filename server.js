@@ -16,20 +16,40 @@ const PROXIED = new Set([
 ]);
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
 
-if (!API_KEY) console.warn('IGNAV_API_KEY is not set; API calls will fail.');
+// One line per event, UTC timestamp first; systemd's journal keeps stdout/stderr.
+const log = (msg, err = false) => (err ? console.error : console.log)(`${new Date().toISOString()} ${msg}`);
+const clip = (s, n = 2000) => (s.length > n ? s.slice(0, n) + '…' : s);
+process.on('uncaughtException', (e) => {
+  log(`crash: ${e.stack ?? e}`, true);
+  process.exit(1);
+});
+
+if (!API_KEY) log('IGNAV_API_KEY is not set; API calls will fail.', true);
 
 createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
 
   if (PROXIED.has(url.pathname)) {
     const body = req.method === 'POST' ? await new Response(req).text() : undefined;
-    const upstream = await fetch(IGNAV + url.pathname + url.search, {
-      method: req.method,
-      headers: { 'X-Api-Key': API_KEY ?? '', 'Content-Type': 'application/json' },
-      body,
-    });
-    res.writeHead(upstream.status, { 'Content-Type': 'application/json' });
-    return res.end(await upstream.text());
+    // The request body holds the search parameters (route, dates, market), enough to reproduce a call.
+    const call = `${req.method} ${url.pathname}${url.search}${body ? ' ' + clip(body) : ''}`;
+    const start = Date.now();
+    try {
+      const upstream = await fetch(IGNAV + url.pathname + url.search, {
+        method: req.method,
+        headers: { 'X-Api-Key': API_KEY ?? '', 'Content-Type': 'application/json' },
+        body,
+      });
+      const text = await upstream.text();
+      const ok = upstream.ok;
+      log(`ignav ${upstream.status} ${Date.now() - start}ms ${call}${ok ? '' : ' -> ' + clip(text)}`, !ok);
+      res.writeHead(upstream.status, { 'Content-Type': 'application/json' });
+      return res.end(text);
+    } catch (e) {
+      log(`ignav failed ${Date.now() - start}ms ${call} -> ${e.cause ?? e}`, true);
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: { message: 'Upstream request failed' } }));
+    }
   }
 
   const path = normalize(join(PUBLIC, url.pathname === '/' ? 'index.html' : url.pathname));
@@ -41,4 +61,4 @@ createServer(async (req, res) => {
   } catch {
     res.writeHead(404).end('Not found');
   }
-}).listen(PORT, () => console.log(`Flights app on http://localhost:${PORT}`));
+}).listen(PORT, () => log(`Flights app on http://localhost:${PORT}`));
