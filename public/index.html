@@ -30,14 +30,16 @@
           </label>
         </div>
         <div class="search-group date-group">
-          <label class="field">
+          <button type="button" class="field date-trigger" data-step="depart" aria-haspopup="dialog">
             <span>Depart</span>
-            <input name="departure_date" type="date" required>
-          </label>
-          <label class="field">
+            <b></b>
+          </button>
+          <span class="date-sep" aria-hidden="true">→</span>
+          <button type="button" class="field date-trigger" data-step="return" aria-haspopup="dialog">
             <span>Return</span>
-            <input name="return_date" type="date">
-          </label>
+            <b></b>
+          </button>
+          <div class="date-picker" role="dialog" aria-label="Choose travel dates" hidden></div>
         </div>
         <div class="search-group meta-group">
           <label class="field field-sm">

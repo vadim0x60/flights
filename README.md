@@ -7,7 +7,8 @@ IGNAV_API_KEY=... npm start   # http://localhost:3000, needs Node 20.11+, no dep
 ```
 
 - `server.js` serves `public/` and forwards a few Ignav endpoints with your API key added, so the key stays out of the browser.
-- `public/app.js` handles search (one-way, or round-trip when you set a return date), sorting, and booking links. Booking links come from `/api/fares/booking-links` using the itinerary's `ignav_id`.
+- `public/dates.js` is the date picker. You toggle departure days and return days, which don't have to be consecutive, such as four Fridays. A round trip searches every pair where the return is on or after the departure, optionally limited to a min–max length of stay (say 2–3 nights for weekend trips only). Each pair is one search, and the picker stops at 12.
+- `public/app.js` runs one search per date or date pair (one-way or round-trip), merges the results, and handles sorting and booking links. Booking links come from `/api/fares/booking-links` using the itinerary's `ignav_id`.
 - `public/filters/index.js` holds the list of custom filters. `public/filters/util.js` has helpers such as `legs`, `segments`, `layovers` and `hour`.
 - `public/filters/wifi.js` gives each flight a Wi-Fi verdict, such as "video calls work" or "no Wi-Fi", using the airline and aircraft type. The data comes from [FlightWifi's open registry](https://flightwifi.app/data.json) (CC BY 4.0), which the browser fetches when the page loads.
 

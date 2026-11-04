@@ -1,6 +1,7 @@
 import filters from './filters/index.js';
 import { legs, layovers } from './filters/util.js';
 import { wifi } from './filters/wifi.js';
+import { createDatePicker } from './dates.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -78,28 +79,48 @@ async function api(path, body) {
   return data;
 }
 
+const dates = createDatePicker($('.date-group'));
+let searchRun = 0;
+let searchNote = '';
+
+// One request per date pair from the picker; results are merged as each one arrives.
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
+  const trips = dates.trips();
+  if (!trips) return;
   const q = Object.fromEntries(new FormData(form));
-  const body = {
+  const base = {
     origin: q.origin.toUpperCase(),
     destination: q.destination.toUpperCase(),
-    departure_date: q.departure_date,
     adults: Number(q.adults),
     cabin_class: q.cabin_class,
     market: q.market.toUpperCase(),
   };
-  if (q.return_date) body.return_date = q.return_date;
-  $('#status').textContent = 'Searching…';
+  const run = ++searchRun;
+  let done = 0;
+  const errors = [];
+  itineraries = [];
+  searchNote = '';
+  $('#status').textContent = trips.length > 1 ? `Running ${trips.length} searches…` : 'Searching…';
   $('#results').replaceChildren();
-  try {
-    const data = await api(`/api/fares/${q.return_date ? 'round-trip' : 'one-way'}`, body);
-    itineraries = data.itineraries;
-    render();
-  } catch (err) {
-    itineraries = [];
-    $('#status').textContent = `Search failed: ${err.message}`;
-  }
+  await Promise.all(trips.map(async (trip) => {
+    try {
+      const data = await api(`/api/fares/${trip.return_date ? 'round-trip' : 'one-way'}`, { ...base, ...trip });
+      if (run !== searchRun) return;
+      itineraries.push(...data.itineraries);
+    } catch (err) {
+      errors.push(`${trip.departure_date}${trip.return_date ? ` → ${trip.return_date}` : ''}: ${err.message}`);
+    }
+    if (run !== searchRun) return;
+    done++;
+    searchNote = [
+      done < trips.length && `${done} of ${trips.length} searches done…`,
+      errors.length && `${errors.length} search${errors.length > 1 ? 'es' : ''} failed (${errors.join('; ')})`,
+    ].filter(Boolean).join(' · ');
+    if (itineraries.length) render();
+    else $('#status').textContent = done < trips.length ? `Searching… ${searchNote}`
+      : errors.length ? `Search failed: ${errors.join('; ')}` : 'No itineraries found.';
+  }));
 });
 
 // --- Sort ------------------------------------------------------------------
@@ -135,6 +156,8 @@ const money = ({ amount, currency }) =>
   new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
 const hm = (min) => `${Math.floor(min / 60)}h${String(Math.round(min % 60)).padStart(2, '0')}`;
 const time = (local) => local.slice(11, 16);
+const legDate = (local) => new Date(`${local.slice(0, 10)}T00:00:00Z`)
+  .toLocaleDateString('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
 const dayShift = (from, to) => {
   const days = (Date.parse(to.slice(0, 10)) - Date.parse(from.slice(0, 10))) / 864e5;
   return days ? `<sup>+${days}</sup>` : '';
@@ -143,7 +166,7 @@ const dayShift = (from, to) => {
 function render() {
   if (!itineraries.length) return;
   const shown = applyFilters(itineraries).sort(sorters[sortSelect.value]);
-  $('#status').textContent = `${shown.length} of ${itineraries.length} itineraries`;
+  $('#status').textContent = `${shown.length} of ${itineraries.length} itineraries${searchNote ? ` · ${searchNote}` : ''}`;
   $('#results').replaceChildren(...shown.map(card));
 }
 
@@ -177,6 +200,7 @@ function legHtml(name, leg) {
     <div class="leg">
       <div class="leg-head">
         <b>${name}</b>
+        <span class="leg-date">${legDate(first.departure_time_local)}</span>
         <span class="leg-route">${first.departure_airport} → ${last.arrival_airport}</span>
         ${stopBadge}
         <span class="leg-total">${hm(leg.duration_minutes)} total</span>
