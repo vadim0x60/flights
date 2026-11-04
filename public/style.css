@@ -1,9 +1,10 @@
-:root,
-[data-theme="swiss"] {
+/* One theme: light by default, dark when the browser or OS asks for it.
+   Both modes share every rule below; only these colour tokens differ. */
+:root {
+  color-scheme: light dark;
   --bg: #f3f6fb;
   --surface: #ffffff;
   --surface-subtle: #f8fafc;
-  --header-bg: #ffffff;
   --text: #0f172a;
   --muted: #64748b;
   --border: #e2e8f0;
@@ -27,57 +28,28 @@
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 }
 
-[data-theme="lounge"] {
-  --bg: #efece6;
-  --surface: #faf8f4;
-  --surface-subtle: #f3f0ea;
-  --header-bg: #e7e3db;
-  --text: #18181b;
-  --muted: #68645e;
-  --border: #dcd7cd;
-  --border-strong: #c5bfb3;
-  --accent: #ea580c;
-  --accent-hover: #c2410c;
-  --accent-soft: #fff7ed;
-  --accent-text: #9a3412;
-  --direct-bg: #ecfdf5;
-  --direct-text: #065f46;
-  --conn-bg: #f5efe6;
-  --conn-border: #dfd6c7;
-  --conn-text: #78350f;
-  --day-shift: #ea580c;
-  --shadow: 0 1px 2px rgba(24, 24, 27, 0.05);
-  --shadow-search: 0 2px 8px rgba(24, 24, 27, 0.06);
-  --radius: 10px;
-  --radius-sm: 6px;
-  --font-data: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-}
-
-[data-theme="cockpit"] {
-  color-scheme: dark;
-  --bg: #090d16;
-  --surface: #111827;
-  --surface-subtle: #182235;
-  --header-bg: #0d1322;
-  --text: #f1f5f9;
-  --muted: #94a3b8;
-  --border: #1e293b;
-  --border-strong: #334155;
-  --accent: #0ea5e9;
-  --accent-hover: #38bdf8;
-  --accent-soft: rgba(14, 165, 233, 0.14);
-  --accent-text: #7dd3fc;
-  --direct-bg: rgba(16, 185, 129, 0.14);
-  --direct-text: #34d399;
-  --conn-bg: rgba(245, 158, 11, 0.12);
-  --conn-border: rgba(245, 158, 11, 0.3);
-  --conn-text: #fbbf24;
-  --day-shift: #fb7185;
-  --shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-  --shadow-search: 0 8px 28px rgba(0, 0, 0, 0.45);
-  --radius: 12px;
-  --radius-sm: 7px;
-  --font-data: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #090d16;
+    --surface: #111827;
+    --surface-subtle: #0d1322;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --border: #1e293b;
+    --border-strong: #334155;
+    --accent: #2563eb;
+    --accent-hover: #3b82f6;
+    --accent-soft: rgba(59, 130, 246, 0.15);
+    --accent-text: #93c5fd;
+    --direct-bg: rgba(16, 185, 129, 0.14);
+    --direct-text: #34d399;
+    --conn-bg: rgba(245, 158, 11, 0.12);
+    --conn-border: rgba(245, 158, 11, 0.3);
+    --conn-text: #fbbf24;
+    --day-shift: #f87171;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    --shadow-search: 0 8px 28px rgba(0, 0, 0, 0.45);
+  }
 }
 
 * { box-sizing: border-box; }
@@ -93,7 +65,7 @@ body {
 /* --- Header & Unified Search Capsule ------------------------------------- */
 
 header {
-  background: var(--header-bg);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 16px 24px 20px;
 }
@@ -142,36 +114,6 @@ h1 {
 .brand-sub {
   font-size: 12.5px;
   color: var(--muted);
-}
-
-.theme-switch {
-  display: inline-flex;
-  background: var(--surface-subtle);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 2px;
-  gap: 2px;
-}
-
-.theme-switch button {
-  background: transparent;
-  color: var(--muted);
-  border: none;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.theme-switch button:hover {
-  color: var(--text);
-}
-
-.theme-switch button.active {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 #search {
@@ -640,6 +582,7 @@ h2 {
   border-radius: 50%;
   background: var(--surface);
   border: 2px solid var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .flight-no {
@@ -920,101 +863,6 @@ sup {
   font-weight: 700;
 }
 
-/* --- Option 2: "Lounge" (Editorial Top-Ribbon + Side-by-Side Legs) ------- */
-
-[data-theme="lounge"] main {
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
-
-[data-theme="lounge"] aside {
-  position: static;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  padding: 12px 18px;
-  gap: 16px;
-}
-
-[data-theme="lounge"] .aside-head {
-  border-bottom: none;
-  padding-bottom: 0;
-  padding-right: 14px;
-  border-right: 1px solid var(--border);
-  gap: 8px;
-}
-
-[data-theme="lounge"] #filters {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px 20px;
-  flex: 1;
-}
-
-[data-theme="lounge"] .filter-number,
-[data-theme="lounge"] .filter-text {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-}
-
-[data-theme="lounge"] .filter-number input {
-  width: 72px;
-  padding: 5px 8px;
-}
-
-[data-theme="lounge"] .filter-text input {
-  width: 128px;
-  padding: 5px 8px;
-}
-
-[data-theme="lounge"] .card {
-  grid-template-columns: 1fr 146px;
-}
-
-[data-theme="lounge"] .card.is-roundtrip .legs {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0;
-}
-
-[data-theme="lounge"] .card.is-roundtrip .leg:first-child {
-  padding-right: 16px;
-}
-
-[data-theme="lounge"] .card.is-roundtrip .leg + .leg {
-  padding-top: 0;
-  border-top: none;
-  padding-left: 16px;
-  border-left: 1px solid var(--border);
-}
-
-[data-theme="lounge"] .flight {
-  grid-template-columns: 58px 88px 14px 90px 42px 1fr;
-  column-gap: 5px;
-}
-
-[data-theme="lounge"] .card.is-roundtrip .aircraft {
-  display: none;
-}
-
-[data-theme="lounge"] .connection {
-  padding-left: 65px;
-}
-
-/* --- Option 3: "Cockpit" (Dark Aviation Telemetry) ----------------------- */
-
-[data-theme="cockpit"] .flight::before {
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
-}
-
-[data-theme="cockpit"] .leg-head b {
-  background: rgba(14, 165, 233, 0.12);
-  border-color: rgba(14, 165, 233, 0.3);
-  color: #7dd3fc;
-}
-
 /* --- Responsive Breakpoints ---------------------------------------------- */
 
 @media (max-width: 920px) {
@@ -1024,8 +872,7 @@ sup {
   .brand-sub {
     display: none;
   }
-  main,
-  [data-theme="lounge"] main {
+  main {
     grid-template-columns: 1fr;
     padding: 16px;
   }
@@ -1052,21 +899,8 @@ sup {
     width: 100%;
     margin-top: 4px;
   }
-  .card,
-  [data-theme="lounge"] .card {
+  .card {
     grid-template-columns: 1fr;
-  }
-  [data-theme="lounge"] .card.is-roundtrip .legs {
-    grid-template-columns: 1fr;
-  }
-  [data-theme="lounge"] .card.is-roundtrip .leg:first-child {
-    padding-right: 0;
-  }
-  [data-theme="lounge"] .card.is-roundtrip .leg + .leg {
-    padding-left: 0;
-    border-left: none;
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
   }
   .buy {
     border-left: none;
@@ -1083,8 +917,7 @@ sup {
     width: auto;
     padding: 8px 20px;
   }
-  .flight,
-  [data-theme="lounge"] .flight {
+  .flight {
     grid-template-columns: 56px max-content 12px max-content 1fr;
     column-gap: 4px;
   }
@@ -1097,8 +930,7 @@ sup {
   .time {
     font-size: 13.5px;
   }
-  .connection,
-  [data-theme="lounge"] .connection {
+  .connection {
     padding-left: 56px;
   }
   .operator {

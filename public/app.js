@@ -7,23 +7,6 @@ const $$ = (sel) => document.querySelectorAll(sel);
 const form = $('#search');
 let itineraries = [];
 
-// --- Theme switcher -------------------------------------------------------
-
-const setTheme = (theme) => {
-  document.documentElement.dataset.theme = theme;
-  try { localStorage.setItem('flights-theme', theme); } catch {}
-  for (const btn of $$('[data-theme-opt]')) {
-    btn.classList.toggle('active', btn.dataset.themeOpt === theme);
-  }
-};
-const initialTheme = new URLSearchParams(location.search).get('theme')
-  || (() => { try { return localStorage.getItem('flights-theme'); } catch { return null; } })()
-  || 'swiss';
-setTheme(initialTheme);
-for (const btn of $$('[data-theme-opt]')) {
-  btn.addEventListener('click', () => setTheme(btn.dataset.themeOpt));
-}
-
 // --- Route swap -----------------------------------------------------------
 
 $('#swap')?.addEventListener('click', () => {
@@ -213,7 +196,7 @@ function wifiHtml(s) {
 
 function card(it) {
   const li = document.createElement('li');
-  li.className = `card${it.inbound ? ' is-roundtrip' : ''}`;
+  li.className = 'card';
   const cabinLabel = (it.cabin_class ?? 'economy').replace('_', ' ');
   li.innerHTML = `
     <div class="legs">
