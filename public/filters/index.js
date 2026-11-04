@@ -27,25 +27,31 @@ export default [
   },
   {
     // You're awake from 40 minutes before each takeoff to 20 minutes after each
-    // landing, connections included. Drop the itinerary if any of those windows
-    // touches Vadim night (see sun.js) at both the trip's origin and its
-    // destination. Local time at a connecting airport doesn't matter.
+    // landing, connections included. Each leg is judged on its own: you start
+    // it on its departure airport's clock and may switch once, at any point, to
+    // its destination's clock, but never back. Drop the itinerary if no such
+    // switch keeps every window out of Vadim night (see sun.js) on the clock
+    // you're on at the time. Local time at a connecting airport doesn't matter.
     id: 'no-red-eye',
     label: 'Protect sleep',
     control: { type: 'checkbox' },
-    keep: (it) => {
-      const ends = [it.outbound.segments[0].departure_airport, it.outbound.segments.at(-1).arrival_airport]
+    keep: (it) => legs(it).every((leg) => {
+      const [from, to] = [leg.segments[0].departure_airport, leg.segments.at(-1).arrival_airport]
         .map((code) => airports[code]);
-      if (!ends.every(Boolean)) return true; // unknown coordinates: can't tell, so keep
+      if (!from || !to) return true; // unknown coordinates: can't tell, so keep
       const minute = 60000;
       // A Vadim night always lasts 8 hours, so a window this short overlaps
       // one exactly when one of its two ends falls inside it.
-      const windows = segments(it).flatMap((s) => [
+      const windows = leg.segments.flatMap((s) => [
         [instant(s, 'departure') - 40 * minute, instant(s, 'departure')],
         [instant(s, 'arrival'), instant(s, 'arrival') + 20 * minute],
       ]);
-      return windows.every((w) => !ends.every(([lat, lon]) => w.some((ms) => isVadimNight(ms, lat, lon))));
-    },
+      const awake = (w, [lat, lon]) => !w.some((ms) => isVadimNight(ms, lat, lon));
+      // Staying on the departure clock as long as it works is never worse,
+      // so switch at the first window it can't take.
+      const sw = windows.findIndex((w) => !awake(w, from));
+      return sw === -1 || windows.slice(sw).every((w) => awake(w, to));
+    }),
   },
   {
     // Drops itineraries that take off from or land at any airport in the US or
