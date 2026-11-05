@@ -731,6 +731,18 @@ h2 {
   transform: translateX(16px);
 }
 
+.filter-remark {
+  margin: -6px 0 0;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--conn-text);
+  background: var(--conn-bg);
+  border: 1px solid var(--conn-border);
+  border-radius: var(--radius-sm);
+}
+
 /* --- Results Toolbar & Sort Pills ---------------------------------------- */
 
 .results-pane {

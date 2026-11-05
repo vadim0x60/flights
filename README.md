@@ -25,6 +25,6 @@ Add an object to the array in `public/filters/index.js`:
 }
 ```
 
-`keep` only runs while its control is active: a checked checkbox, or a number or text field that isn't empty. Filters run in the browser on results you've already fetched, so changing them doesn't make new API requests. Each search or booking-link lookup counts as one billable Ignav request.
+`keep` only runs while its control is active: a checked checkbox, or a number or text field that isn't empty. An optional `remark: (value, { origin, destination }) => text or null` shows a note under the control while it's active; `no-usa` uses it to comment on US searches. Filters run in the browser on results you've already fetched, so changing them doesn't make new API requests. Each search or booking-link lookup counts as one billable Ignav request.
 
 Ignav also supports server-side filters (`max_stops`, `max_price`, `departure_time_range`, `airlines_include`/`airlines_exclude`, and bag minimums). See the [one-way docs](https://ignav.com/docs/one-way). To use them, add them to the request body in `app.js`.

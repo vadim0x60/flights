@@ -4,6 +4,8 @@
 //   renders an input in the sidebar; its current value is passed to keep().
 // - keep() returns true to show the itinerary. It is only called while the
 //   filter is active: checkbox checked, or number/text field non-empty.
+// - remark(value, { origin, destination }) is optional. While the filter is
+//   active, the text it returns (or null for none) shows under the control.
 //
 // Filters run in the browser on results already fetched, so changing them is
 // instant and costs no API requests. Add a filter by appending to this list.
@@ -11,6 +13,12 @@ import { legs, segments, layovers, instant } from './util.js';
 import { isVadimNight } from './sun.js';
 import airports from './airports.js';
 import { wifi, VERDICTS } from './wifi.js';
+
+// Airports in the US, its territories and outlying islands, plus the US
+// multi-airport city codes (not in airports.js) people type as an origin.
+const isUsa = (code) =>
+  ['NYC', 'WAS', 'CHI', 'DTT'].includes(code) ||
+  ['US', 'PR', 'GU', 'VI', 'AS', 'MP', 'UM'].includes(airports[code]?.[2]);
 
 export default [
   {
@@ -60,10 +68,19 @@ export default [
     id: 'no-usa',
     label: 'No US of A',
     control: { type: 'checkbox' },
-    keep: (it) => {
-      const usa = ['US', 'PR', 'GU', 'VI', 'AS', 'MP', 'UM'];
-      return segments(it).every((s) =>
-        [s.departure_airport, s.arrival_airport].every((code) => !usa.includes(airports[code]?.[2])));
+    keep: (it) => segments(it).every((s) => !isUsa(s.departure_airport) && !isUsa(s.arrival_airport)),
+    // Searching from or to the US with this on can only ever return nothing.
+    remark: (_, { origin, destination }) => {
+      const code = [origin, destination].find(isUsa);
+      if (!code) return null;
+      const quips = [
+        `${code} is in the United States. We checked. Twice.`,
+        `Flying ${code === origin ? 'from' : 'to'} ${code}, but not through the USA. Bold strategy.`,
+        `Showing all flights involving ${code} that avoid America: none. You're welcome.`,
+        `You'd like ${code}, minus the US part. Have you tried closing your eyes on landing?`,
+      ];
+      // Stable per airport, so it doesn't change with every keystroke.
+      return quips[[...code].reduce((n, c) => n + c.charCodeAt(0), 0) % quips.length];
     },
   },
   {

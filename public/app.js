@@ -13,6 +13,7 @@ let itineraries = [];
 $('#swap')?.addEventListener('click', () => {
   const [o, d] = [form.elements.origin, form.elements.destination];
   [o.value, d.value] = [d.value, o.value];
+  syncRemarks();
 });
 
 // --- Filters sidebar ------------------------------------------------------
@@ -43,8 +44,10 @@ for (const f of filters) {
       : input.value.trim() || null;
   };
   read();
-  input.addEventListener('input', () => { read(); syncReset(); render(); });
-  inputs.set(f.id, { input, read, def: f.control.default });
+  input.addEventListener('input', () => { read(); syncReset(); syncRemarks(); render(); });
+  const remark = f.remark && Object.assign(document.createElement('p'), { className: 'filter-remark', hidden: true });
+  remark?.setAttribute('role', 'status');
+  inputs.set(f.id, { input, read, def: f.control.default, remark });
   const label = document.createElement('label');
   label.className = `filter filter-${f.control.type}`;
   const span = document.createElement('span');
@@ -52,9 +55,23 @@ for (const f of filters) {
   span.textContent = f.label;
   if (f.control.type === 'checkbox') label.append(input, span);
   else label.append(span, input);
-  $('#filters').append(label);
+  $('#filters').append(...[label, remark].filter(Boolean));
 }
+
+// Filter remarks react to the route typed in, searched or not.
+function syncRemarks() {
+  const route = { origin: form.elements.origin.value.trim().toUpperCase(),
+    destination: form.elements.destination.value.trim().toUpperCase() };
+  for (const f of filters) {
+    const { remark } = inputs.get(f.id);
+    if (!remark) continue;
+    remark.textContent = (isActive(values[f.id]) && f.remark(values[f.id], route)) || '';
+    remark.hidden = !remark.textContent;
+  }
+}
+for (const name of ['origin', 'destination']) form.elements[name].addEventListener('input', syncRemarks);
 syncReset();
+syncRemarks();
 
 resetBtn?.addEventListener('click', () => {
   for (const f of filters) {
@@ -64,6 +81,7 @@ resetBtn?.addEventListener('click', () => {
     entry.read();
   }
   syncReset();
+  syncRemarks();
   render();
 });
 
