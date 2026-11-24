@@ -2,7 +2,8 @@
   "targets": {
     "default": {
       "on": "vadimdotme/thebox",
-      "name": "flights"
+      "name": "flights",
+      "domain": "flights.vadim.me"
     }
   }
 }
