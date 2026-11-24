@@ -1,0 +1,9 @@
+build: |
+  rm -rf runtime && mkdir -p runtime
+  curl -fsSL https://nodejs.org/dist/v26.13.1/node-v26.13.1-linux-x64.tar.xz |
+    tar -xJ -C runtime --strip-components=2 node-v26.13.1-linux-x64/bin/node
+source: false
+artifacts: [runtime, server.js, package.json, public]
+services:
+  web:
+    command: ./runtime/node server.js
