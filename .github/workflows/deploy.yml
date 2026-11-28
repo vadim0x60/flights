@@ -1,0 +1,39 @@
+name: Deploy to box
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# One deploy at a time; a newer push waits for the running deploy instead of cancelling it.
+concurrency:
+  group: deploy-box
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Amp CLI
+        run: |
+          curl -fsSL https://ampcode.com/install.sh | bash
+          echo "$HOME/.amp/bin" >> "$GITHUB_PATH"
+
+      # The target (vadimdotme/thebox, app "flights", domain flights.vadim.me) comes from .amp/box-deploy.json.
+      - name: Deploy
+        env:
+          AMP_API_KEY: ${{ secrets.AMP_API_KEY }}
+        run: |
+          amp --version
+          amp boxes deploy
+
+      - name: Show deployment
+        env:
+          AMP_API_KEY: ${{ secrets.AMP_API_KEY }}
+        run: amp boxes deployments vadimdotme/thebox

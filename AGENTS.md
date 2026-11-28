@@ -32,8 +32,8 @@ Don't inject fetch stubs into the page. If the mock lacks a case, add it to `moc
 - **Where it runs.** https://flights.vadim.me is the Amp Box deployment `flights` on the box `vadimdotme/thebox`, configured by `.amp/box.yaml` and `.amp/box-deploy.json`. It's public. It runs plain `./runtime/node server.js` (a pinned Node 26.13.1) under systemd, which restarts it when it exits. `IGNAV_API_KEY` is a secret on that deployment. Set it with `manage_amp`, topic `secrets`, scope `box`; `amp secrets set` is refused inside an orb.
 - **Deploying.** Ask Vadim before deploying; pushing to master needs his go-ahead too.
   1. Check the change in mock mode (`npm run mock`, http://localhost:3000).
-  2. Commit and push to master. Pushing alone deploys nothing.
-  3. From a clean checkout of master, run `amp boxes deploy`. No flags are needed because the target is saved.
+  2. Commit and push to master. The `Deploy to box` workflow (`.github/workflows/deploy.yml`) then runs `amp boxes deploy` with Vadim's personal Amp API key from the `AMP_API_KEY` repository secret. No flags are needed because the target is saved in `.amp/box-deploy.json`. To deploy by hand instead, run `amp boxes deploy` from a clean checkout of master.
+  3. Check the workflow run in GitHub Actions.
   4. `amp boxes deployments vadimdotme/thebox` should show `"status": "ready"` and the pushed commit as `deployedCommitSHA`. Then load https://flights.vadim.me/.
 - **Logs.** They're in the box's journal: `amp boxes exec vadimdotme/thebox 'sudo journalctl -u amp-box-deploy-37298324-760e-49e4-a781-142cf5c24e7c-svc-web.service -n 200 --no-pager'`. Every Ignav call has had a log line since 2026-11-04T13:09:54Z. The box's log starts 2026-11-24.
 - **History.** Until 2026-11-24 the site ran as the `web` service of the Deploy Orb thread (T-01a19e35-1e4c-7164-9990-e5298c53644e), and deploying meant asking that thread to pull master and run `amp orb service restart web`. That service is stopped and no longer serves the site. The thread still holds the deploy history.
