@@ -1,5 +1,6 @@
 services:
   web:
-    command: node --watch server.js
+    # Mock Ignav, so UI work in an orb spends no API quota. For live Ignav, run `npm run dev` instead.
+    command: IGNAV_MOCK=1 node --watch server.js
     port: 3000
-    title: Flights
+    title: Flights (mock Ignav)

@@ -6,6 +6,9 @@ import { extname, join, normalize } from 'node:path';
 
 const PORT = Number(process.env.PORT) || 3000;
 const API_KEY = process.env.IGNAV_API_KEY;
+// IGNAV_MOCK=1 answers the proxied endpoints from mock.js instead of calling Ignav.
+const MOCK = process.env.IGNAV_MOCK ? (await import('./mock.js')).default : null;
+const UPSTREAM = MOCK ? 'mock' : 'ignav';
 const IGNAV = 'https://ignav.com';
 const PUBLIC = join(import.meta.dirname, 'public');
 const PROXIED = new Set([
@@ -38,7 +41,8 @@ process.on('uncaughtException', (e) => {
   process.exit(1);
 });
 
-if (!API_KEY) log('IGNAV_API_KEY is not set; API calls will fail.', true);
+if (MOCK) log('IGNAV_MOCK is set: answering Ignav endpoints with mock data from mock.js.');
+else if (!API_KEY) log('IGNAV_API_KEY is not set; API calls will fail.', true);
 
 async function handle(req, res) {
   if (!URL.canParse(req.url, 'http://localhost')) return res.writeHead(400).end('Bad request');
@@ -69,14 +73,14 @@ async function handle(req, res) {
         const tag = attempt > 1 ? ` (try ${attempt})` : '';
         const last = attempt === RETRIES + 1;
         try {
-          const upstream = await fetch(IGNAV + url.pathname + url.search, {
+          const upstream = await (MOCK ?? fetch)(IGNAV + url.pathname + url.search, {
             method: req.method,
             headers: { 'X-Api-Key': API_KEY ?? '', 'Content-Type': 'application/json' },
             body,
           });
           const text = await upstream.text();
           const ok = upstream.ok;
-          log(`ignav ${upstream.status} ${Date.now() - start}ms ${call}${ok ? '' : ' -> ' + clip(text)}${tag}`, !ok);
+          log(`${UPSTREAM} ${upstream.status} ${Date.now() - start}ms ${call}${ok ? '' : ' -> ' + clip(text)}${tag}`, !ok);
           if (!last && upstream.status === 424 && text.includes('"unable_to_complete_request"')) {
             await sleep(500 * 2 ** (attempt - 1));
             continue;
@@ -84,7 +88,7 @@ async function handle(req, res) {
           if (upstream.status === 200) usage.billed++;
           return json(res, upstream.status, text);
         } catch (e) {
-          log(`ignav failed ${Date.now() - start}ms ${call} -> ${e.cause ?? e}${tag}`, true);
+          log(`${UPSTREAM} failed ${Date.now() - start}ms ${call} -> ${e.cause ?? e}${tag}`, true);
           if (!last) {
             await sleep(500 * 2 ** (attempt - 1));
             continue;
