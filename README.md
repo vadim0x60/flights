@@ -6,7 +6,7 @@ A small flight search and booking app built on the [Ignav API](https://ignav.com
 IGNAV_API_KEY=... npm start   # http://localhost:3000, needs Node 20.11+, no dependencies
 ```
 
-- `server.js` serves `public/` and forwards a few Ignav endpoints with your API key added, so the key stays out of the browser.
+- `server.js` serves `public/` and forwards a few Ignav endpoints with your API key added, so the key stays out of the browser. It stops forwarding for the rest of the UTC day after `IGNAV_DAILY_LIMIT` billable requests (default 500), and it runs at most 24 at once.
 - `public/dates.js` is the date picker. You toggle departure days and return days, which don't have to be consecutive, such as four Fridays. A round trip searches every pair where the return is on or after the departure, optionally limited to a min–max length of stay (say 2–3 nights for weekend trips only). Each pair is one search, and the picker stops at 12.
 - `public/app.js` runs one search per date or date pair (one-way or round-trip), merges the results, and handles sorting and booking links. Booking links come from `/api/fares/booking-links` using the itinerary's `ignav_id`.
 - `public/filters/index.js` holds the list of custom filters. `public/filters/util.js` has helpers such as `legs`, `segments`, `layovers` and `hour`.
